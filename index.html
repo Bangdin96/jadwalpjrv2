@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal PJR UPA TIK</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        body { box-sizing: border-box; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .photo-container {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #e5e7eb;
+            background: #f3f4f6;
+        }
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s ease;
+        }
+        .photo-fallback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #d1d5db;
+            color: #6b7280;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen"><!-- Header -->
+  <header class="bg-white shadow-lg border-b-4 border-blue-600">
+   <div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="flex justify-between items-center">
+     <div>
+      <h1 class="text-3xl font-bold text-gray-900">Jadwal PJR UPA TIK</h1>
+      <p class="text-gray-600">Sistem Penjadwalan Penanggung Jawab Ruangan</p>
+     </div><button id="admin-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"> Admin Login </button>
+    </div>
+   </div>
+  </header><!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-4 py-8"><!-- Navigation -->
+   <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+    <div class="flex justify-between items-center"><button id="prev-btn" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"> ← Hari Sebelumnya </button>
+     <div class="text-center">
+      <p class="text-sm text-gray-600">Menampilkan jadwal</p>
+      <p id="date-range" class="font-semibold text-lg"></p>
+     </div><button id="next-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"> Hari Selanjutnya → </button>
+    </div>
+    <div class="text-center mt-4"><button id="today-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"> Kembali ke Hari Ini </button>
+    </div>
+   </div><!-- Schedule Display -->
+   <div id="schedule-view"><!-- Hari Pertama -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border-l-4 border-green-500">
+     <h2 class="text-2xl font-bold mb-6 flex items-center"><span id="first-day-badge" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3">HARI INI</span> <span id="first-day-date"></span></h2>
+     <div id="first-day-schedule" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><!-- Jadwal akan muncul di sini -->
+     </div>
+    </div><!-- Hari Kedua -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+     <h2 class="text-2xl font-bold mb-6 flex items-center"><span id="second-day-badge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mr-3">BESOK</span> <span id="second-day-date"></span></h2>
+     <div id="second-day-schedule" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><!-- Jadwal akan muncul di sini -->
+     </div>
+    </div>
+   </div><!-- Admin Panel (Hidden) -->
+   <div id="admin-panel" class="hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+     <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Panel Admin</h2><button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"> Logout </button>
+     </div><!-- Form Tambah Libur -->
+     <div class="bg-gray-50 rounded-lg p-6 mb-6">
+      <h3 class="text-lg font-semibold mb-4">Tambah Hari Libur</h3>
+      <form id="holiday-form" class="grid grid-cols-1 md:grid-cols-3 gap-4"><input type="date" id="holiday-date" required class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"> <input type="text" id="holiday-reason" placeholder="Keterangan libur" required class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"> <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"> Tambah Libur </button>
+      </form>
+     </div><!-- Daftar Libur -->
+     <div class="bg-gray-50 rounded-lg p-6">
+      <h3 class="text-lg font-semibold mb-4">Daftar Hari Libur</h3>
+      <div id="holiday-list"><!-- Daftar libur akan muncul di sini -->
+      </div>
+     </div>
+    </div>
+   </div>
+  </main><!-- Login Modal -->
+  <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+   <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+    <h3 class="text-2xl font-bold mb-6 text-center">Login Admin</h3>
+    <form id="login-form">
+     <div class="mb-4"><label class="block text-sm font-medium mb-2">Username</label> <input type="text" id="username" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+     </div>
+     <div class="mb-6"><label class="block text-sm font-medium mb-2">Password</label> <input type="password" id="password" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+     </div>
+     <div class="flex space-x-3"><button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">Login</button> <button type="button" id="cancel-login" class="flex-1 bg-gray-300 hover:bg-gray-400 py-2 rounded-lg transition-colors">Batal</button>
+     </div>
+    </form>
+    <div id="login-error" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm"></div>
+   </div>
+  </div>
+  <script>
+        // Data PJR untuk setiap lab
+        const labData = {
+            "ICT 1": ["Awaluddin, S.Pd", "Nahdawati, SM", "Harfan"],
+            "ICT 2": ["Darlia D, SE", "Dadang Juanda, SE", "Ardiansyah, S.IP"],
+            "ICT 3": ["Syawad", "Almuhtadi Billah, S.Kom", "Afdaliah, S.Kom"],
+            "ICT 4": ["Nurrahmah, S.Pd", "Ahmad Faizal, S.Sos", "S. Nurul Hadi, Amd.Kom"],
+            "UTBK 1": ["Fitriani, SH", "Karabin Sainra Muskadar, SE", "Mawardi, ST"],
+            "UTBK 2": ["Muhammad Zulham, ST", "Ma'rifah, SE", "Muh. Dinar, S.Kom"],
+            "UTBK 3": ["Ridwan, S.Kom", "Asri Mandaris, S.IP", "Abdul Ra'uf, SE"]
+        };
+
+        // Mapping nama PJR ke nama file foto
+        const photoMapping = {
+            "Awaluddin, S.Pd": "awaluddin.jpg",
+            "Nahdawati, SM": "nahdawati.jpg",
+            "Harfan": "harfan.jpg",
+            "Darlia D, SE": "darlia.jpg",
+            "Dadang Juanda, SE": "dadang.jpg",
+            "Ardiansyah, S.IP": "ardiansyah.jpg",
+            "Syawad": "syawad.jpg",
+            "Almuhtadi Billah, S.Kom": "almuhtadi.jpg",
+            "Afdaliah, S.Kom": "afdaliah.jpg",
+            "Nurrahmah, S.Pd": "nurrahmah.jpg",
+            "Ahmad Faizal, S.Sos": "ahmad_faizal.jpg",
+            "S. Nurul Hadi, Amd.Kom": "nurul_hadi.jpg",
+            "Fitriani, SH": "fitriani.jpg",
+            "Karabin Sainra Muskadar, SE": "karabin.jpg",
+            "Mawardi, ST": "mawardi.jpg",
+            "Muhammad Zulham, ST": "zulham.jpg",
+            "Ma'rifah, SE": "marifah.jpg",
+            "Muh. Dinar, S.Kom": "dinar.jpg",
+            "Ridwan, S.Kom": "ridwan.jpg",
+            "Asri Mandaris, S.IP": "asri.jpg",
+            "Abdul Ra'uf, SE": "abdul_rauf.jpg"
+        };
+
+        // Fungsi untuk mendapatkan path foto PJR
+        function getPhotoPath(pjrName) {
+            const fileName = photoMapping[pjrName];
+            return fileName ? `images/${fileName}` : null;
+        }
+
+        // Fungsi untuk mendapatkan inisial nama
+        function getInitials(name) {
+            if (!name) return '?';
+            const words = name.split(' ');
+            if (words.length >= 2) {
+                return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+            }
+            return name.charAt(0).toUpperCase();
+        }
+
+        // Variabel global
+        let holidays = [];
+        let isLoggedIn = false;
+        let currentViewDate = new Date();
+
+        // Fungsi untuk format tanggal Indonesia
+        function formatDate(date) {
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                           'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        // Cek apakah hari libur
+        function isHoliday(date) {
+            const dateStr = date.toISOString().split('T')[0];
+            return holidays.some(holiday => holiday.date === dateStr);
+        }
+
+        // Cek apakah weekend
+        function isWeekend(date) {
+            const day = date.getDay();
+            return day === 0 || day === 6; // Minggu atau Sabtu
+        }
+
+        // Cek apakah hari kerja
+        function isWorkingDay(date) {
+            return !isWeekend(date) && !isHoliday(date);
+        }
+
+        // Hitung hari kerja sejak 1 Januari 2024
+        function getWorkingDaysSinceEpoch(targetDate) {
+            const epoch = new Date('2024-01-01');
+            let workingDays = 0;
+            let currentDate = new Date(epoch);
+
+            while (currentDate < targetDate) {
+                if (isWorkingDay(currentDate)) {
+                    workingDays++;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            return workingDays;
+        }
+
+        // Dapatkan PJR untuk tanggal tertentu
+        function getPJRForDate(labName, date) {
+            if (!isWorkingDay(date)) return null;
+
+            const workingDays = getWorkingDaysSinceEpoch(date);
+            const pjrList = labData[labName];
+            const pjrIndex = workingDays % pjrList.length;
+            return pjrList[pjrIndex];
+        }
+
+        // Buat kartu jadwal dengan foto PJR
+        function createScheduleCard(labName, pjrName, isToday = false) {
+            const cardClass = isToday ? 'bg-green-50 border-green-200 shadow-md' : 'bg-blue-50 border-blue-200';
+            const badgeClass = isToday ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+            const photoPath = pjrName ? getPhotoPath(pjrName) : null;
+            const initials = getInitials(pjrName);
+
+            return `
+                <div class="p-4 rounded-lg border-2 ${cardClass} fade-in hover:shadow-lg transition-shadow">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-gray-800">${labName}</h3>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">
+                            ${isToday ? 'AKTIF' : 'BESOK'}
+                        </span>
+                    </div>
+                    <div class="text-center">
+                        <div class="photo-container">
+                            ${photoPath ?
+                                `<img src="${photoPath}" alt="${pjrName}" onload="this.style.opacity='1'" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="opacity:0;">
+                                 <div class="photo-fallback" style="display:none;">${initials}</div>`
+                                :
+                                `<div class="photo-fallback">${initials}</div>`
+                            }
+                        </div>
+                        <p class="font-semibold text-sm text-gray-800 mb-1">${pjrName || 'Libur'}</p>
+                        <p class="text-xs text-gray-600">Penanggung Jawab</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update tampilan jadwal
+        function updateScheduleDisplay() {
+            const firstDay = new Date(currentViewDate);
+            const secondDay = new Date(currentViewDate);
+            secondDay.setDate(secondDay.getDate() + 1);
+
+            const today = new Date();
+            const isFirstDayToday = firstDay.toDateString() === today.toDateString();
+            const isSecondDayToday = secondDay.toDateString() === today.toDateString();
+
+            // Update tanggal
+            document.getElementById('date-range').textContent =
+                `${formatDate(firstDay)} - ${formatDate(secondDay)}`;
+            document.getElementById('first-day-date').textContent = formatDate(firstDay);
+            document.getElementById('second-day-date').textContent = formatDate(secondDay);
+
+            // Update badge
+            const firstBadge = document.getElementById('first-day-badge');
+            const secondBadge = document.getElementById('second-day-badge');
+
+            if (isFirstDayToday) {
+                firstBadge.textContent = 'HARI INI';
+                firstBadge.className = 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3';
+            } else {
+                firstBadge.textContent = firstDay < today ? 'SEBELUMNYA' : 'AKAN DATANG';
+                firstBadge.className = 'bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm mr-3';
+            }
+
+            if (isSecondDayToday) {
+                secondBadge.textContent = 'HARI INI';
+                secondBadge.className = 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3';
+            } else {
+                secondBadge.textContent = 'BESOK';
+                secondBadge.className = 'bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mr-3';
+            }
+
+            // Generate jadwal hari pertama
+            const firstContainer = document.getElementById('first-day-schedule');
+            let firstHTML = '';
+
+            if (isWorkingDay(firstDay)) {
+                Object.keys(labData).forEach(labName => {
+                    const pjr = getPJRForDate(labName, firstDay);
+                    firstHTML += createScheduleCard(labName, pjr, isFirstDayToday);
+                });
+            } else {
+                const reason = getHolidayReason(firstDay);
+                firstHTML = `<div class="col-span-full text-center py-8">
+                    <div class="text-6xl mb-4">🏖️</div>
+                    <p class="text-xl font-semibold text-gray-600">Hari Libur</p>
+                    <p class="text-gray-500">${reason}</p>
+                </div>`;
+            }
+            firstContainer.innerHTML = firstHTML;
+
+            // Generate jadwal hari kedua
+            const secondContainer = document.getElementById('second-day-schedule');
+            let secondHTML = '';
+
+            if (isWorkingDay(secondDay)) {
+                Object.keys(labData).forEach(labName => {
+                    const pjr = getPJRForDate(labName, secondDay);
+                    secondHTML += createScheduleCard(labName, pjr, isSecondDayToday);
+                });
+            } else {
+                const reason = getHolidayReason(secondDay);
+                secondHTML = `<div class="col-span-full text-center py-8">
+                    <div class="text-6xl mb-4">🏖️</div>
+                    <p class="text-xl font-semibold text-gray-600">Hari Libur</p>
+                    <p class="text-gray-500">${reason}</p>
+                </div>`;
+            }
+            secondContainer.innerHTML = secondHTML;
+        }
+
+        // Dapatkan alasan libur
+        function getHolidayReason(date) {
+            if (isWeekend(date)) return 'Akhir pekan';
+
+            const dateStr = date.toISOString().split('T')[0];
+            const holiday = holidays.find(h => h.date === dateStr);
+            return holiday ? holiday.reason : 'Tidak ada jadwal PJR';
+        }
+
+        // Load data hari libur dari database
+        async function loadHolidays() {
+            try {
+                const response = await fetch('/.netlify/functions/api', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action: 'get_holidays' })
+                });
+
+                holidays = await response.json();
+                updateScheduleDisplay();
+                if (isLoggedIn) renderHolidayList();
+            } catch (error) {
+                console.error('Error loading holidays:', error);
+                // Jika tidak ada database, gunakan data default
+                holidays = [
+                    {id: 1, date: '2024-12-25', reason: 'Hari Raya Natal'},
+                    {id: 2, date: '2025-01-01', reason: 'Tahun Baru'}
+                ];
+                updateScheduleDisplay();
+            }
+        }
+
+        // Navigasi tanggal
+        function goToPreviousDay() {
+            currentViewDate.setDate(currentViewDate.getDate() - 1);
+            updateScheduleDisplay();
+        }
+
+        function goToNextDay() {
+            currentViewDate.setDate(currentViewDate.getDate() + 1);
+            updateScheduleDisplay();
+        }
+
+        function goToToday() {
+            currentViewDate = new Date();
+            updateScheduleDisplay();
+        }
+
+        // Login functions
+        function showLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+
+        function hideLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('login-form').reset();
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === 'admin123') {
+                isLoggedIn = true;
+                hideLoginModal();
+                showAdminPanel();
+                renderHolidayList();
+            } else {
+                document.getElementById('login-error').textContent = 'Username atau password salah!';
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            isLoggedIn = false;
+            hideAdminPanel();
+        }
+
+        function showAdminPanel() {
+            document.getElementById('schedule-view').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+        }
+
+        function hideAdminPanel() {
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('schedule-view').classList.remove('hidden');
+        }
+
+        // Tambah hari libur
+        async function handleAddHoliday(e) {
+            e.preventDefault();
+
+            const date = document.getElementById('holiday-date').value;
+            const reason = document.getElementById('holiday-reason').value;
+
+            try {
+                const response = await fetch('/.netlify/functions/api', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'add_holiday',
+                        date: date,
+                        reason: reason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('holiday-form').reset();
+                    showMessage('Hari libur berhasil ditambahkan!', 'success');
+                    loadHolidays();
+                } else {
+                    showMessage('Gagal menambahkan hari libur!', 'error');
+                }
+            } catch (error) {
+                // Jika tidak ada database, tambah ke array lokal
+                holidays.push({
+                    id: Date.now(),
+                    date: date,
+                    reason: reason
+                });
+                document.getElementById('holiday-form').reset();
+                showMessage('Hari libur berhasil ditambahkan! (Mode offline)', 'success');
+                updateScheduleDisplay();
+                renderHolidayList();
+            }
+        }
+
+        // Hapus hari libur
+        async function deleteHoliday(id) {
+            try {
+                const response = await fetch('/.netlify/functions/api', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'delete_holiday',
+                        id: id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Hari libur berhasil dihapus!', 'success');
+                    loadHolidays();
+                } else {
+                    showMessage('Gagal menghapus hari libur!', 'error');
+                }
+            } catch (error) {
+                // Jika tidak ada database, hapus dari array lokal
+                holidays = holidays.filter(h => h.id != id);
+                showMessage('Hari libur berhasil dihapus! (Mode offline)', 'success');
+                updateScheduleDisplay();
+                renderHolidayList();
+            }
+        }
+
+        // Render daftar hari libur
+        function renderHolidayList() {
+            const container = document.getElementById('holiday-list');
+
+            if (holidays.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada hari libur</p>';
+                return;
+            }
+
+            container.innerHTML = holidays.map(holiday => `
+                <div class="flex justify-between items-center p-3 bg-white rounded-lg border mb-2 hover:shadow-md transition-shadow">
+                    <div>
+                        <p class="font-medium">${formatDate(new Date(holiday.date))}</p>
+                        <p class="text-sm text-gray-600">${holiday.reason}</p>
+                    </div>
+                    <button onclick="deleteHoliday(${holiday.id})" class="text-red-600 hover:text-red-800 text-sm font-medium transition-colors">
+                        Hapus
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Show message
+        function showMessage(message, type) {
+            const div = document.createElement('div');
+            div.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all ${
+                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+            }`;
+            div.textContent = message;
+            document.body.appendChild(div);
+            setTimeout(() => {
+                div.style.opacity = '0';
+                div.style.transform = 'translateX(100%)';
+                setTimeout(() => div.remove(), 300);
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('admin-btn').addEventListener('click', showLoginModal);
+        document.getElementById('cancel-login').addEventListener('click', hideLoginModal);
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        document.getElementById('logout-btn').addEventListener('click', handleLogout);
+        document.getElementById('holiday-form').addEventListener('submit', handleAddHoliday);
+        document.getElementById('prev-btn').addEventListener('click', goToPreviousDay);
+        document.getElementById('next-btn').addEventListener('click', goToNextDay);
+        document.getElementById('today-btn').addEventListener('click', goToToday);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHolidays();
+            updateScheduleDisplay();
+        });
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99882750a1e6fd61',t:'MTc2MjEzMzkyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

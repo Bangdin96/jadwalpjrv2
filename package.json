@@ -1,0 +1,12 @@
+{
+  "name": "jadwal-pjr",
+  "version": "1.0.0",
+  "description": "Sistem Jadwal PJR UPA TIK",
+  "main": "index.html",
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "scripts": {
+    "build": "echo 'No build step required'"
+  }
+}
