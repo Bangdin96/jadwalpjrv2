@@ -174,7 +174,7 @@
         // Fungsi untuk format tanggal Indonesia
         function formatDate(date) {
             const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
             return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
         }
@@ -214,7 +214,7 @@
         // Dapatkan PJR untuk tanggal tertentu
         function getPJRForDate(labName, date) {
             if (!isWorkingDay(date)) return null;
-
+            
             const workingDays = getWorkingDaysSinceEpoch(date);
             const pjrList = labData[labName];
             const pjrIndex = workingDays % pjrList.length;
@@ -238,10 +238,10 @@
                     </div>
                     <div class="text-center">
                         <div class="photo-container">
-                            ${photoPath ?
+                            ${photoPath ? 
                                 `<img src="${photoPath}" alt="${pjrName}" onload="this.style.opacity='1'" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="opacity:0;">
-                                 <div class="photo-fallback" style="display:none;">${initials}</div>`
-                                :
+                                 <div class="photo-fallback" style="display:none;">${initials}</div>` 
+                                : 
                                 `<div class="photo-fallback">${initials}</div>`
                             }
                         </div>
@@ -257,13 +257,13 @@
             const firstDay = new Date(currentViewDate);
             const secondDay = new Date(currentViewDate);
             secondDay.setDate(secondDay.getDate() + 1);
-
+            
             const today = new Date();
             const isFirstDayToday = firstDay.toDateString() === today.toDateString();
             const isSecondDayToday = secondDay.toDateString() === today.toDateString();
 
             // Update tanggal
-            document.getElementById('date-range').textContent =
+            document.getElementById('date-range').textContent = 
                 `${formatDate(firstDay)} - ${formatDate(secondDay)}`;
             document.getElementById('first-day-date').textContent = formatDate(firstDay);
             document.getElementById('second-day-date').textContent = formatDate(secondDay);
@@ -271,7 +271,7 @@
             // Update badge
             const firstBadge = document.getElementById('first-day-badge');
             const secondBadge = document.getElementById('second-day-badge');
-
+            
             if (isFirstDayToday) {
                 firstBadge.textContent = 'HARI INI';
                 firstBadge.className = 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3';
@@ -330,7 +330,7 @@
         // Dapatkan alasan libur
         function getHolidayReason(date) {
             if (isWeekend(date)) return 'Akhir pekan';
-
+            
             const dateStr = date.toISOString().split('T')[0];
             const holiday = holidays.find(h => h.date === dateStr);
             return holiday ? holiday.reason : 'Tidak ada jadwal PJR';
@@ -346,16 +346,23 @@
                     },
                     body: JSON.stringify({ action: 'get_holidays' })
                 });
-
-                holidays = await response.json();
+                
+                if (response.ok) {
+                    holidays = await response.json();
+                    console.log('Loaded holidays:', holidays);
+                } else {
+                    console.error('Failed to load holidays:', response.status);
+                    holidays = [];
+                }
+                
                 updateScheduleDisplay();
                 if (isLoggedIn) renderHolidayList();
             } catch (error) {
                 console.error('Error loading holidays:', error);
                 // Jika tidak ada database, gunakan data default
                 holidays = [
-                    {id: 1, date: '2024-12-25', reason: 'Hari Raya Natal'},
-                    {id: 2, date: '2025-01-01', reason: 'Tahun Baru'}
+                    {id: '1', date: '2024-12-25', reason: 'Hari Raya Natal'},
+                    {id: '2', date: '2025-01-01', reason: 'Tahun Baru'}
                 ];
                 updateScheduleDisplay();
             }
@@ -392,7 +399,7 @@
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-
+            
             if (username === 'admin' && password === 'admin123') {
                 isLoggedIn = true;
                 hideLoginModal();
@@ -422,36 +429,41 @@
         // Tambah hari libur
         async function handleAddHoliday(e) {
             e.preventDefault();
-
+            
             const date = document.getElementById('holiday-date').value;
             const reason = document.getElementById('holiday-reason').value;
-
+            
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.textContent = 'Menambah...';
+            submitButton.disabled = true;
+            
             try {
                 const response = await fetch('/.netlify/functions/api', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
+                    body: JSON.stringify({ 
                         action: 'add_holiday',
                         date: date,
                         reason: reason
                     })
                 });
-
+                
                 const result = await response.json();
-
+                
                 if (result.success) {
                     document.getElementById('holiday-form').reset();
                     showMessage('Hari libur berhasil ditambahkan!', 'success');
                     loadHolidays();
                 } else {
-                    showMessage('Gagal menambahkan hari libur!', 'error');
+                    showMessage('Gagal menambahkan hari libur: ' + (result.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
+                console.error('Add holiday error:', error);
                 // Jika tidak ada database, tambah ke array lokal
                 holidays.push({
-                    id: Date.now(),
+                    id: Date.now().toString(),
                     date: date,
                     reason: reason
                 });
@@ -459,44 +471,83 @@
                 showMessage('Hari libur berhasil ditambahkan! (Mode offline)', 'success');
                 updateScheduleDisplay();
                 renderHolidayList();
+            } finally {
+                submitButton.textContent = 'Tambah Libur';
+                submitButton.disabled = false;
             }
         }
 
-        // Hapus hari libur
+        // Hapus hari libur dengan konfirmasi
         async function deleteHoliday(id) {
+            // Konfirmasi hapus
+            if (!confirm('Apakah Anda yakin ingin menghapus hari libur ini?')) {
+                return;
+            }
+
+            // Tampilkan loading state
+            const deleteButton = document.querySelector(`button[data-holiday-id="${id}"]`);
+            if (deleteButton) {
+                deleteButton.textContent = 'Menghapus...';
+                deleteButton.disabled = true;
+            }
+
             try {
+                console.log('Attempting to delete holiday with ID:', id);
+                
                 const response = await fetch('/.netlify/functions/api', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
+                    body: JSON.stringify({ 
                         action: 'delete_holiday',
                         id: id
                     })
                 });
-
+                
+                console.log('Delete response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
-
+                console.log('Delete result:', result);
+                
                 if (result.success) {
                     showMessage('Hari libur berhasil dihapus!', 'success');
                     loadHolidays();
                 } else {
-                    showMessage('Gagal menghapus hari libur!', 'error');
+                    showMessage('Gagal menghapus hari libur: ' + (result.error || 'Unknown error'), 'error');
+                    console.error('Delete failed:', result);
                 }
             } catch (error) {
+                console.error('Delete error:', error);
+                
                 // Jika tidak ada database, hapus dari array lokal
-                holidays = holidays.filter(h => h.id != id);
-                showMessage('Hari libur berhasil dihapus! (Mode offline)', 'success');
-                updateScheduleDisplay();
-                renderHolidayList();
+                const originalLength = holidays.length;
+                holidays = holidays.filter(h => h.id !== id);
+                
+                if (holidays.length < originalLength) {
+                    showMessage('Hari libur berhasil dihapus! (Mode offline)', 'success');
+                    updateScheduleDisplay();
+                    renderHolidayList();
+                } else {
+                    showMessage('Gagal menghapus hari libur: ' + error.message, 'error');
+                }
+            } finally {
+                // Reset button state jika masih ada
+                if (deleteButton) {
+                    deleteButton.textContent = 'Hapus';
+                    deleteButton.disabled = false;
+                }
             }
         }
 
         // Render daftar hari libur
         function renderHolidayList() {
             const container = document.getElementById('holiday-list');
-
+            
             if (holidays.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada hari libur</p>';
                 return;
@@ -507,8 +558,13 @@
                     <div>
                         <p class="font-medium">${formatDate(new Date(holiday.date))}</p>
                         <p class="text-sm text-gray-600">${holiday.reason}</p>
+                        <p class="text-xs text-gray-400">ID: ${holiday.id}</p>
                     </div>
-                    <button onclick="deleteHoliday(${holiday.id})" class="text-red-600 hover:text-red-800 text-sm font-medium transition-colors">
+                    <button 
+                        data-holiday-id="${holiday.id}" 
+                        onclick="deleteHoliday('${holiday.id}')" 
+                        class="text-red-600 hover:text-red-800 text-sm font-medium transition-colors px-3 py-1 rounded border border-red-200 hover:bg-red-50"
+                    >
                         Hapus
                     </button>
                 </div>
@@ -546,5 +602,5 @@
             updateScheduleDisplay();
         });
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99882750a1e6fd61',t:'MTc2MjEzMzkyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99890e8af684eba0',t:'MTc2MjE0MzM5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
