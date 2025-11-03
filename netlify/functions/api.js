@@ -1,6 +1,5 @@
 const { MongoClient, ObjectId } = require('mongodb');
 
-// MongoDB connection string dari environment variable
 const MONGODB_URI = process.env.MONGODB_URI;
 
 let cachedClient = null;
@@ -9,7 +8,11 @@ async function connectToDatabase() {
   if (cachedClient) {
     return cachedClient;
   }
-
+  
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI environment variable is not set');
+  }
+  
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
   cachedClient = client;
@@ -17,7 +20,6 @@ async function connectToDatabase() {
 }
 
 exports.handler = async (event, context) => {
-  // Set CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -25,16 +27,10 @@ exports.handler = async (event, context) => {
     'Content-Type': 'application/json'
   };
 
-  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
+    return { statusCode: 200, headers, body: '' };
   }
 
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -44,10 +40,9 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Parse request body
     let body;
     try {
-      body = JSON.parse(event.body);
+      body = JSON.parse(event.body || '{}');
     } catch (e) {
       return {
         statusCode: 400,
@@ -57,6 +52,7 @@ exports.handler = async (event, context) => {
     }
 
     const { action } = body;
+    console.log('API called with action:', action);
 
     if (!action) {
       return {
@@ -66,7 +62,6 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Connect to database
     const client = await connectToDatabase();
     const db = client.db('jadwal-pjr');
     const holidays = db.collection('holidays');
@@ -75,6 +70,7 @@ exports.handler = async (event, context) => {
       case 'get_holidays':
         try {
           const holidayList = await holidays.find({}).toArray();
+          console.log('Found holidays:', holidayList.length);
           return {
             statusCode: 200,
             headers,
@@ -89,14 +85,15 @@ exports.handler = async (event, context) => {
           return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: 'Failed to fetch holidays' })
+            body: JSON.stringify({ error: 'Failed to fetch holidays: ' + error.message })
           };
         }
 
       case 'add_holiday':
         try {
           const { date, reason } = body;
-
+          console.log('Adding holiday:', { date, reason });
+          
           if (!date || !reason) {
             return {
               statusCode: 400,
@@ -105,18 +102,19 @@ exports.handler = async (event, context) => {
             };
           }
 
-          const result = await holidays.insertOne({
-            date: date,
+          const result = await holidays.insertOne({ 
+            date: date, 
             reason: reason,
             createdAt: new Date()
           });
-
+          
+          console.log('Holiday added with ID:', result.insertedId);
           return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({
-              success: true,
-              id: result.insertedId.toString()
+            body: JSON.stringify({ 
+              success: true, 
+              id: result.insertedId.toString() 
             })
           };
         } catch (error) {
@@ -124,14 +122,15 @@ exports.handler = async (event, context) => {
           return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: 'Failed to add holiday' })
+            body: JSON.stringify({ error: 'Failed to add holiday: ' + error.message })
           };
         }
 
       case 'delete_holiday':
         try {
           const { id } = body;
-
+          console.log('Deleting holiday with ID:', id);
+          
           if (!id) {
             return {
               statusCode: 400,
@@ -140,7 +139,6 @@ exports.handler = async (event, context) => {
             };
           }
 
-          // Validate ObjectId format
           if (!ObjectId.isValid(id)) {
             return {
               statusCode: 400,
@@ -150,7 +148,7 @@ exports.handler = async (event, context) => {
           }
 
           const result = await holidays.deleteOne({ _id: new ObjectId(id) });
-
+          
           if (result.deletedCount === 0) {
             return {
               statusCode: 404,
@@ -159,6 +157,7 @@ exports.handler = async (event, context) => {
             };
           }
 
+          console.log('Holiday deleted successfully');
           return {
             statusCode: 200,
             headers,
@@ -169,7 +168,7 @@ exports.handler = async (event, context) => {
           return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: 'Failed to delete holiday' })
+            body: JSON.stringify({ error: 'Failed to delete holiday: ' + error.message })
           };
         }
 
@@ -177,7 +176,7 @@ exports.handler = async (event, context) => {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'Invalid action' })
+          body: JSON.stringify({ error: 'Invalid action: ' + action })
         };
     }
   } catch (error) {
@@ -185,10 +184,10 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({
-        error: 'Database connection failed',
-        details: error.message
+      body: JSON.stringify({ 
+        error: 'Database connection failed: ' + error.message
       })
     };
   }
 };
+
