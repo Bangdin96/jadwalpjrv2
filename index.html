@@ -196,17 +196,39 @@
             return !isWeekend(date) && !isHoliday(date);
         }
 
-        // Hitung hari kerja sejak 1 Januari 2024
-        function getWorkingDaysSinceEpoch(targetDate) {
-            const epoch = new Date('2024-01-01');
+        // Hitung hari kerja sejak hari ini (sebagai hari ke-0)
+        function getWorkingDaysSinceToday(targetDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset waktu ke 00:00:00
+            
+            const target = new Date(targetDate);
+            target.setHours(0, 0, 0, 0); // Reset waktu ke 00:00:00
+            
             let workingDays = 0;
-            let currentDate = new Date(epoch);
+            let currentDate = new Date(today);
 
-            while (currentDate < targetDate) {
-                if (isWorkingDay(currentDate)) {
-                    workingDays++;
+            // Jika target date adalah hari ini, return 0
+            if (target.getTime() === today.getTime()) {
+                return 0;
+            }
+
+            // Jika target date di masa depan
+            if (target > today) {
+                while (currentDate < target) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    if (isWorkingDay(currentDate)) {
+                        workingDays++;
+                    }
                 }
-                currentDate.setDate(currentDate.getDate() + 1);
+                return workingDays;
+            }
+
+            // Jika target date di masa lalu
+            while (currentDate > target) {
+                if (isWorkingDay(currentDate)) {
+                    workingDays--;
+                }
+                currentDate.setDate(currentDate.getDate() - 1);
             }
             return workingDays;
         }
@@ -215,26 +237,28 @@
         function getPJRForDate(labName, date) {
             if (!isWorkingDay(date)) return null;
             
-            const workingDays = getWorkingDaysSinceEpoch(date);
+            const workingDaysFromToday = getWorkingDaysSinceToday(date);
             const pjrList = labData[labName];
-            const pjrIndex = workingDays % pjrList.length;
+            
+            // Pastikan index selalu positif dengan menggunakan modulo yang benar
+            let pjrIndex = workingDaysFromToday % pjrList.length;
+            if (pjrIndex < 0) {
+                pjrIndex = pjrList.length + pjrIndex;
+            }
+            
             return pjrList[pjrIndex];
         }
 
         // Buat kartu jadwal dengan foto PJR
         function createScheduleCard(labName, pjrName, isToday = false) {
             const cardClass = isToday ? 'bg-green-50 border-green-200 shadow-md' : 'bg-blue-50 border-blue-200';
-            const badgeClass = isToday ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
             const photoPath = pjrName ? getPhotoPath(pjrName) : null;
             const initials = getInitials(pjrName);
 
             return `
                 <div class="p-4 rounded-lg border-2 ${cardClass} fade-in hover:shadow-lg transition-shadow">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-gray-800">${labName}</h3>
-                        <span class="px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">
-                            ${isToday ? 'AKTIF' : 'BESOK'}
-                        </span>
+                    <div class="mb-3">
+                        <h3 class="font-bold text-gray-800 text-left">${labName}</h3>
                     </div>
                     <div class="text-center">
                         <div class="photo-container">
@@ -602,5 +626,5 @@
             updateScheduleDisplay();
         });
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99890e8af684eba0',t:'MTc2MjE0MzM5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'998920930344fda3',t:'MTc2MjE0NDEzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
